@@ -48,7 +48,7 @@ func NewCouchbase(uri string) (DBAdapter, error) {
 	if err != nil {
 		return nil, err
 	}
-	pool, err := c.GetPool("entities")
+	pool, err := c.GetPool("default")
 	if err != nil {
 		return nil, err
 	}
