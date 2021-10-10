@@ -16,3 +16,13 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# deploy
+deploy/cassandra/
+deploy/cockroach-data/
+deploy/conf/
+deploy/data/
+deploy/db/
+deploy/import/
+deploy/logs/
+deploy/plugins/

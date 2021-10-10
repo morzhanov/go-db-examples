@@ -1,0 +1,175 @@
+version: "3"
+services:
+  # src: https://github.com/thelastpickle/docker-cassandra-bootstrap/blob/master/docker-compose.yml
+  cassandra:
+    image: cassandra
+    container_name: godbexamples_cassandra
+    environment:
+      - MAX_HEAP_SIZE=500M
+      - HEAP_NEWSIZE=100M
+      - CASSANDRA_CLUSTER_NAME=pickle-db
+      - CASSANDRA_DC=pickle-east
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+      - CASSANDRA_SEEDS=cassandra,cassandra2,cassandra3
+      - LOCAL_JMX=no
+    ports:
+      - "7199:7199" # JMX
+      - "7000:7000" # cluster communication
+      - "7001:7001" # cluster communication (SSL)
+      - "9042:9042" # native protocol clients
+      - "9160:9160" # thrift clients
+    volumes:
+      - ./cassandra/config/collectd.cassandra.conf:/etc/collectd/collectd.conf
+      - ./cassandra/config/prometheus.yml:/prometheus/prometheus.yml
+      - ./data/cassandra:/var/lib/cassandra
+    networks:
+      - go-db-examples
+
+  # src: https://github.com/ClickHouse/ClickHouse/blob/master/docker-compose.yml
+  clickhouse_server:
+    image: yandex/clickhouse-server
+    container_name: godbexamples_clickhouse_server
+    ports:
+      - "8123:8123"
+    volumes:
+      - ./db:/var/lib/clickhouse
+    networks:
+      - go-db-examples
+
+  clickhouse_client:
+    image: yandex/clickhouse-client
+    container_name: godbexamples_clickhouse_client
+    entrypoint:
+      - /bin/sleep
+    command:
+      - infinity
+    networks:
+      - go-db-examples
+
+  # src: https://gist.github.com/dbist/ebb1f39f580ad9d07c04c3a3377e2bff
+  cockroach:
+    image: cockroachdb/cockroach:v19.2.2
+    container_name: godbexamples_cockroachdb
+    ports:
+      - "26257:26257"
+      - "8080:8080"
+    command: start-single-node --insecure
+    volumes:
+      - "${PWD}/cockroach-data/crdb:/cockroach/cockroach-data"
+    networks:
+      - go-db-examples
+
+  # src: https://github.com/couchbase/docker/blob/master/compose/couchbase-server-sync-gateway/docker-compose.yml
+  couchbase:
+    image: couchbase
+    container_name: godbexamples_couchbase
+    ports:
+      - "8091:8091"
+    networks:
+      - go-db-examples
+
+  # src:
+  couchdb:
+    image: docker.io/bitnami/couchdb:3
+    container_name: godbexamples_couchdb
+    environment:
+      - COUCHDB_PASSWORD=couchdb
+    ports:
+      - '5984:5984'
+      - '4369:4369'
+      - '9100:9100'
+    volumes:
+      - couchdb_data:/bitnami/couchdb
+    networks:
+      - go-db-examples
+
+  # src: https://github.com/bitnami/bitnami-docker-mongodb/blob/master/docker-compose.yml
+  mongodb:
+    image: docker.io/bitnami/mongodb:4.4
+    container_name: godbexamples_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - 'mongodb_data:/bitnami/mongodb'
+    networks:
+      - go-db-examples
+
+  # src: https://thibaut-deveraux.medium.com/how-to-install-neo4j-with-docker-compose-36e3ba939af0
+  neo4j:
+    image: neo4j:3.5
+    container_name: godbexamples_neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - ./conf:/conf
+      - ./data:/data
+      - ./import:/import
+      - ./logs:/logs
+      - ./plugins:/plugins
+    environment:
+      - NEO4J_dbms_memory_pagecache_size=1G
+      - NEO4J_dbms.memory.heap.initial_size=1G
+      - NEO4J_dbms_memory_heap_max__size=1G
+    networks:
+      - go-db-examples
+
+  postgres:
+    image: postgres
+    container_name: godbexamples_postgres
+    volumes:
+      - ./data/db:/var/lib/postgresql/go-db-examples-data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - go-db-examples
+
+  # src: https://github.com/bitnami/bitnami-docker-redis/blob/master/docker-compose.yml
+  redis:
+    image: docker.io/bitnami/redis:6.2
+    container_name: godbexamples_redis
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    ports:
+      - '6379:6379'
+    volumes:
+      - 'redis_data:/bitnami/redis/data'
+    networks:
+      - go-db-examples
+
+  # src: https://stackoverflow.com/questions/51019760/how-to-run-solrcloud-with-docker-compose
+  solr:
+    image: solr
+    container_name: godbexamples_solr
+    ports:
+      - "9983:9983"
+      - "8983:8983"
+    volumes:
+      - solr_data:/opt/solr/server/solr/mycores
+    entrypoint:
+      - docker-entrypoint.sh
+      - solr
+      - start
+      - -c
+      - -f
+    networks:
+      - go-db-examples
+
+networks:
+  go-db-examples:
+
+volumes:
+  couchdb_data:
+    driver: local
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+  solr_data:
+    driver: local
